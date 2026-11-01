@@ -10,10 +10,21 @@ Converts the ten levels of your THPS2 install (its ALL.PKR) from your own copy o
 select. Nothing of either game is in this repository: the files are made from your copies each time. How it works,
 what is converted and what isn't: [thps2_levels/README.md](thps2_levels/README.md).
 
-- `thps2_levels/` - the converter (`thps2_levels.ts`: `convert`, `selfcheck`, `list` where it has one) and its tools.
+- `thps2_levels/` - the converter (`thps2_levels.ts`: `convert`, `selfcheck`, `list`) and its readers of THPS2's files (`pkr.ts`: the ALL.PKR archive; `thps2.ts`: its level formats).
 
-It depends only on [thug2-level-converter-core](https://github.com/CanuckAussieKev/thug2-level-converter-core) (pinned
-to a commit in package.json): THUG2's formats and what the converters share.
+## Dependencies
+
+Each pinned to a tagged commit in package.json (`git+https://git@github.com/...#<commit>`; one copy of each: every repository that uses one pins the same commit):
+
+- [thug2-level-converter-core](https://github.com/CanuckAussieKev/thug2-level-converter-core): THUG2's formats (scenes, collision, textures, archives, scripts), the level port's common steps and the THUGPRO compatibility register. THPS2's own formats are read here: no other converter's code is needed.
+
+## Public API
+
+What other repositories may import - package.json's `exports`, nothing else (`import ... from "thug2-thps2-level-converter/thps2_levels/pkr.ts"`):
+
+- `thps2_levels/pkr.ts` - THPS2's ALL.PKR archive, read (the content pipeline's loading pictures come from it).
+
+Commands (package.json's `commands`: the tools with a command line - importing a module never runs one): `thps2_levels/thps2_levels.ts`.
 
 ## Usage
 
@@ -23,7 +34,7 @@ Needs Node 24 and NeverScript's `ns.exe` (QB scripts compiled): the
 
     git clone https://github.com/CanuckAussieKev/thug2-thps2-level-converter
     cd thug2-thps2-level-converter
-    npm install
+    npm ci
     node thps2_levels/thps2_levels.ts convert thps2_hangar --thps2 "C:\Games\THPS2" --thug2 C:\Games\THUG2 --ns <ns.exe>
     node thps2_levels/thps2_levels.ts selfcheck --thug2 C:\Games\THUG2
 
@@ -35,4 +46,10 @@ select. In the decomp, where the pipeline installs this converter, the same comm
     node tools/pipeline/run.ts thps2_levels/thps2_levels.ts convert --thug2 C:\Games\THUG2
     node tools/pipeline/menu_level/make_menu_level.ts --game C:\Games\THUG2
 
-Checks: `npm run typecheck`, `npm run lint`, `npm test` (the tests that need a game install skip without it).
+Checks: `npm run typecheck`, `npm run lint`, `npm test` (the tests that need a game install skip without it;
+`package.test.ts` checks package.json's exports, commands and pins). GitHub Actions runs them on every push
+(`.github/workflows/ci.yml`).
+
+## Versions
+
+Releases are tagged `v<major>.<minor>.<patch>`; this is `v1.0.0`. The repositories that use it pin the tagged commit.
