@@ -39,10 +39,9 @@ import * as thug2Col from "thug2-level-converter-core/level_port/thug2_col.ts";
 import { type Blend, makeMaterial, THUG2_TERRAIN_TYPES } from "thug2-level-converter-core/level_port/thug2_material.ts";
 import * as thug2Scene from "thug2-level-converter-core/level_port/thug2_scene.ts";
 import { trisToStrip } from "thug2-level-converter-core/level_port/tri_strip.ts";
-import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { exitWith, isMain, parseCli, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
 import { requireNs } from "thug2-level-converter-core/lib/neverscript.ts";
-import { isMain, print, pyExit, runMain } from "thug2-level-converter-core/lib/py.ts";
 import * as gapTable from "./gap_table.ts";
 import { Pkr } from "./pkr.ts";
 import * as thps2 from "./thps2.ts";
@@ -1756,7 +1755,7 @@ export function cmdConvert(args: Args): number {
     const wanted: LevelInfo[] = [];
     for (const name of args.levels.length ? args.levels : LEVELS.map((l) => l.base)) {
         const info = findLevel(name);
-        if (info === undefined) pyExit(`${name}: not a THPS2 level (${LEVELS.map((l) => l.name).join(", ")})`);
+        if (info === undefined) exitWith(`${name}: not a THPS2 level (${LEVELS.map((l) => l.name).join(", ")})`);
         wanted.push(info);
     }
     staging.prepareStaging(out, !args.levels.length);
@@ -2095,7 +2094,7 @@ export function parseCommandLine(argv: readonly string[]): Args {
     const command = positionals[0];
     if (command !== "convert" && command !== "selfcheck" && command !== "list" && command !== "gaps") {
         process.stderr.write(`${USAGE}\nerror: the command is convert, selfcheck, list or gaps\n`);
-        pyExit(2);
+        exitWith(2);
     }
     return {
         command,
@@ -2120,7 +2119,7 @@ export function parseCommandLine(argv: readonly string[]): Args {
             },
             (message) => {
                 process.stderr.write(`${USAGE}\nerror: ${message}\n`);
-                return pyExit(2);
+                return exitWith(2);
             },
         ),
         hdCacheClear: values["hd-cache-clear"] ?? false,
