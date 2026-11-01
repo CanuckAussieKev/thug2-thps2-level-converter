@@ -1,14 +1,14 @@
 // NOT ORIGINAL - converts Tony Hawk's Pro Skater 2 (PC) levels to THUG2's formats so that THUG2 can load and play
 // them (README.md). Nothing of either game is stored in the repo: the files are made from the user's own copies.
 //
-//   node tools/pipeline/thps2_levels/thps2_levels.ts convert [levels...] [--thug2 C:\Games\THUG2] [--thps2 C:\Games\THPS2]
-//   node tools/pipeline/thps2_levels/thps2_levels.ts selfcheck | list
+//   node thps2_levels/thps2_levels.ts convert [levels...] [--thug2 C:\Games\THUG2] [--thps2 C:\Games\THPS2]
+//   node thps2_levels/thps2_levels.ts selfcheck | list
 //   then: node tools/pipeline/menu_level/make_menu_level.ts   (installs them into the data overlay, with level select signs)
 //
 // convert reads <thps2>\ALL.PKR (pkr.ts: data\<base>.psx, _l.psx, _t.trg, newtex\<Folder>\*.bmp - formats in
 // thps2.ts) and writes <thug2>\thug2-decomp-thps2\ (not read by the game): levels\<level>\<level>.scn.xbx / .tex.xbx /
 // .col.xbx / .qb (the node array) and levels.json (what make_menu_level.ts adds to Levels.qb and the level select:
-// tools/pipeline/level_port/ported_levels.ts). Every level is THPS2's own data - never THUG1's or THUGPRO's remakes (the user's
+// thug2-level-converter-core/level_port/ported_levels.ts). Every level is THPS2's own data - never THUG1's or THUGPRO's remakes (the user's
 // decision, 2026-10-21): its own entries, thps2_<name>, in a THPS2 section of the level select.
 //
 // What a level becomes:
@@ -24,22 +24,22 @@
 //   - nodes: restarts (the level's start first, as Player1; 2P / horse ones for those modes) and rails.
 
 import * as fs from "node:fs";
-import * as common from "../level_port/common.ts";
-import * as geometry from "../level_port/geometry.ts";
-import * as hdTextures from "../level_port/hd_textures.ts";
-import { mipDown } from "../level_port/mips.ts";
-import * as nodes from "../level_port/nodes.ts";
-import * as portedLevels from "../level_port/ported_levels.ts";
-import * as qb from "../level_port/qb.ts";
-import * as rampCollisionFix from "../level_port/ramp_collision.ts";
-import type * as tex from "../level_port/tex.ts";
-import * as thug2Col from "../level_port/thug2_col.ts";
-import { type Blend, makeMaterial, THUG2_TERRAIN_TYPES } from "../level_port/thug2_material.ts";
-import * as thug2Scene from "../level_port/thug2_scene.ts";
-import { trisToStrip } from "../level_port/tri_strip.ts";
-import { parseCli } from "../lib/cli.ts";
-import { resolveInstall } from "../lib/install.ts";
-import { isMain, print, pyExit, pyJoin, runMain } from "../lib/py.ts";
+import * as common from "thug2-level-converter-core/level_port/common.ts";
+import * as geometry from "thug2-level-converter-core/level_port/geometry.ts";
+import * as hdTextures from "thug2-level-converter-core/level_port/hd_textures.ts";
+import { mipDown } from "thug2-level-converter-core/level_port/mips.ts";
+import * as nodes from "thug2-level-converter-core/level_port/nodes.ts";
+import * as portedLevels from "thug2-level-converter-core/level_port/ported_levels.ts";
+import * as qb from "thug2-level-converter-core/level_port/qb.ts";
+import * as rampCollisionFix from "thug2-level-converter-core/level_port/ramp_collision.ts";
+import type * as tex from "thug2-level-converter-core/level_port/tex.ts";
+import * as thug2Col from "thug2-level-converter-core/level_port/thug2_col.ts";
+import { type Blend, makeMaterial, THUG2_TERRAIN_TYPES } from "thug2-level-converter-core/level_port/thug2_material.ts";
+import * as thug2Scene from "thug2-level-converter-core/level_port/thug2_scene.ts";
+import { trisToStrip } from "thug2-level-converter-core/level_port/tri_strip.ts";
+import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
+import { isMain, print, pyExit, pyJoin, runMain } from "thug2-level-converter-core/lib/py.ts";
 import * as gapTable from "./gap_table.ts";
 import { Pkr } from "./pkr.ts";
 import * as thps2 from "./thps2.ts";
@@ -172,7 +172,7 @@ export function toThug(p: readonly number[]): Vec3 {
 }
 
 // The same point as a THUG2 node's Position (THUG2 reads a node's z negated from the geometry's - as THPS3's /
-// THPS4's node arrays, tools/pipeline/thps3_levels).
+// THPS4's node arrays, thug2-thps3-level-converter/thps3_levels).
 export function toNodePosition(p: readonly number[]): Vec3 {
     const [x, y, z] = toThug(p);
     return [x, y, 0 - z];
@@ -492,7 +492,7 @@ export function faceBlend(face: thps2.PsxFace): Blend {
 export const SECTOR_FLAGS = (0x80002000 | thug2Scene.SEC_TEXCOORDS | thug2Scene.SEC_COLORS) >>> 0; // (as THPS3's)
 export const SEMI_ALPHA = 64; // a half, in THUG2's 128 = full
 
-// --hd-textures: the optional AI upscaling pass (tools/pipeline/level_port/hd_textures.ts) and its running totals.
+// --hd-textures: the optional AI upscaling pass (thug2-level-converter-core/level_port/hd_textures.ts) and its running totals.
 export interface HdPass {
     options: hdTextures.HdOptions;
     stats: hdTextures.HdStats;
@@ -525,7 +525,7 @@ export interface ConvertedWorld {
     };
 }
 
-// THUG2's trigger faces (as its own trigger boxes and tools/pipeline/game/triggers.ts): trigger, not collidable, no skater
+// THUG2's trigger faces (as its own trigger boxes and tools/game/triggers.ts): trigger, not collidable, no skater
 // shadow, invisible.
 export const TRIGGER_FACE_FLAGS =
     thug2Col.FACE_TRIGGER | thug2Col.FACE_NON_COLLIDABLE | thug2Col.FACE_NO_SKATER_SHADOW | thug2Col.FACE_INVISIBLE;
@@ -779,7 +779,7 @@ export function convertWorld(
 // face's) is a layer one above it: the smaller face lies on the larger (a decal on its wall); of two the same size
 // the earlier one in the file is on top (the PlayStation draws a slot's faces from the last added, so the first one
 // put in ends up on top). A layer's triangles get a material of their own with that z bias (THUG2's depth bias -
-// tools/pipeline/level_port/overlay_bias.ts has how it is drawn). Per face, not per material as overlay_bias decides for the
+// thug2-level-converter-core/level_port/overlay_bias.ts has how it is drawn). Per face, not per material as overlay_bias decides for the
 // other ports: in THPS2 the same texture is a base in one place and a layer in another.
 
 export const kLayerTolerance = 1.0; // inches off the other face's plane that still count as on it (THPS2 lifts its
@@ -1838,7 +1838,7 @@ export function cmdConvert(args: Args): number {
         let nodeText = nodeArray.text;
         if (logic.glassBroken) {
             // The glass's sound (THUG2's own breakable glass plays HitGlassPane2x - THPS2's own audio isn't converted),
-            // loaded by the level's LoadTerrain, as tools/pipeline/thaw_levels does.
+            // loaded by the level's LoadTerrain, as thug2-thaw-level-converter/thaw_levels does.
             const start = "script LoadTerrain {\n";
             nodeText = nodeText.replace(
                 start,
@@ -2053,7 +2053,7 @@ const USAGE = `usage: thps2_levels.ts {convert,selfcheck,list,gaps} [levels ...]
   --ns        NeverScript's compiler (default out\\neverscript\\ns.exe)
   --no-mips   no mip levels (faster)
   --hd-textures [{2,4}]
-              convert: the textures AI-upscaled (default x4; tools/pipeline/hd_textures/README.md - optional, off by
+              convert: the textures AI-upscaled (default x4; thug2-content-pipeline/hd_textures/README.md - optional, off by
               default; needs node tools/pipeline/hd_textures/fetch.ts once)
   --hd-model MODEL    realesrgan-x4plus (default) or realesrgan-x4plus-anime
   --hd-max N          the upscaled textures' longer side at most N (default 1024)

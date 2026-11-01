@@ -12,7 +12,7 @@
 
 import * as fs from "node:fs";
 import * as zlib from "node:zlib";
-import { FormatError } from "../level_port/binio.ts";
+import { FormatError } from "thug2-level-converter-core/level_port/binio.ts";
 
 export const STORED = 0xfffffffe;
 

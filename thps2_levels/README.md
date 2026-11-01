@@ -8,9 +8,9 @@ decision, 2026-10-21. Nothing of either game is in the repo: the files are made 
 ## Running it
 
 Needs Node 24+ (`npm install` once), NeverScript (`tools\build_neverscript.ps1` ->
-`out\neverscript\ns.exe`) and, to install the levels, tools/pipeline/menu_level/make_menu_level.ts.
+`out\neverscript\ns.exe`) and, to install the levels, thug2-content-pipeline/menu_level/make_menu_level.ts.
 
-    node tools/pipeline/thps2_levels/thps2_levels.ts convert [levels...] [--thps2 C:\Games\THPS2] [--thug2 C:\Games\THUG2]
+    node thps2_levels/thps2_levels.ts convert [levels...] [--thps2 C:\Games\THPS2] [--thug2 C:\Games\THUG2]
     node tools/pipeline/menu_level/make_menu_level.ts [--game C:\Games\THUG2]
 
 `convert` reads `<thps2>\ALL.PKR` (the PC version keeps every data file in it) and writes `<thug2>\thug2-decomp-thps2\`
@@ -20,8 +20,8 @@ too); the default is all ten. `--no-mips` skips the mip levels. `make_menu_level
 overlay and adds them to `Levels.qb` and the level select's THPS2 section (run it after every `convert`; converting
 only some rewrites `levels.json` with only those - finish with a full convert).
 
-    node tools/pipeline/thps2_levels/thps2_levels.ts selfcheck
-    node tools/pipeline/thps2_levels/thps2_levels.ts list
+    node thps2_levels/thps2_levels.ts selfcheck
+    node thps2_levels/thps2_levels.ts list
 
 `selfcheck` parses every file of the ten levels (worlds, texture libraries, low-detail and object files, nodes,
 newtex BMPs) and round-trips THUG2's LA / TestLevel files; `list` shows the levels and what ALL.PKR has of each.
@@ -73,7 +73,7 @@ texels, the newtex BMPs (by the texture's name checksum), the meaning of face fl
   quarter pipes have it (2026-10-24): from ~45 degrees up across the whole ramp (unflagged ramp faces of 45 degrees
   or more under a vert face are vert too), never under 40 (THPS2's vert bit on low transitions is left out - an ollie
   there was vert air and a bail). Only flags change: the drawn scene and the geometry are the same.
-  `node tools/pipeline/level_port/ramp_check.ts <levels folder>` measures it, `--flags` compares a port's flags by slope with
+  `node tools/pipeline/run.ts level_port/ramp_check.ts <levels folder>` measures it, `--flags` compares a port's flags by slope with
   THUG2's own levels'.
 - Nodes: restarts (the level's start first as Player1; 2P, HORSE and the rest as THUG2's types; THPS2's "Dummy" ones
   left out) and rails (every rail point a RailNode linked to the next ones). `convert` reports restarts with no floor
@@ -105,7 +105,7 @@ texels, the newtex BMPs (by the texture's name checksum), the meaning of face fl
   not collided with) and spinning (V_ANGULAR_VELOCITY: Obj_RotX / Y / Z) ones.
 - Faces: semi-transparent faces in their PlayStation blend mode (bits 8-9: 0 half, 1 added); quads whose corners go
   round split along 0-2 (no bowties).
-- Signs: pictograms of their own (tools/pipeline/menu_level/level_select_icons.ts).
+- Signs: pictograms of their own (thug2-content-pipeline/menu_level/level_select_icons.ts).
 
 ## Gap names and scores (gap_table.ts)
 
@@ -115,7 +115,7 @@ THPS2's gap table (names, scores) is in its executable, not in ALL.PKR - the .tr
 or the text -, a score; any record size and field order) and its names and scores go into the gaps' EndGap; a gap it
 doesn't name, or no readable executable, keeps the stand-in "GAP <number>", 250 points. `gaps` shows what was found:
 
-    node tools/pipeline/thps2_levels/thps2_levels.ts gaps [levels...] [--thps2-exe <file>]
+    node thps2_levels/thps2_levels.ts gaps [levels...] [--thps2-exe <file>]
 
 The PC release's THawk2.exe is wrapped by an encrypting loader: its .text and .data are encrypted on disk (7.99 bits a
 byte, no strings) and decrypted only by the encrypting loader at run time. PartyMod's THPS2.exe is that file with partypatcher's 35-byte patch, so
@@ -155,7 +155,7 @@ Z-fighting: each drawn face lying on another (coplanar, inside it) gets a z bias
 exact duplicate triangles are left out. And the strips: until 2026-10-22 trisToStrip's joins left a real triangle
 (last, a, b) at every other join, drawn over the next face with the previous face's material - most of what the user
 saw as z-fighting (same-bias coplanar overlap: Hangar 1.39M -> 0 square inches, NY 5.84M -> 0, Philadelphia 5.07M -> 0,
-Skate Heaven 2.78M -> 0 - `node tools/pipeline/level_port/layer_check.ts`). THPS3's trisToStrip had the same join, fixed too.
+Skate Heaven 2.78M -> 0 - `node tools/pipeline/run.ts level_port/layer_check.ts`). THPS3's trisToStrip had the same join, fixed too.
 
 Not yet: gap names and scores (a readable THPS2 executable), the cars (Car_* kinds, C_*.psx models), sounds and the
 sound emitters (ScriptOnlyBaddy; THPS2's audio), SetSkyColor / SetFadeColor (layout not decoded), flag 0x400, THPS2's

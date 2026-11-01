@@ -64,7 +64,7 @@
 //   points, 13 camera points, 255 the end) are kept as their raw bytes.
 // Positions are in the world's vertex units: x, y down, z - a right-handed space (the PlayStation GTE's).
 
-import { FormatError } from "../level_port/binio.ts";
+import { FormatError } from "thug2-level-converter-core/level_port/binio.ts";
 
 export { FormatError };
 

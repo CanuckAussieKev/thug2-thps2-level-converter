@@ -6,12 +6,12 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { test } from "node:test";
-import type { SourceColObject } from "../level_port/geometry.ts";
-import * as hdTextures from "../level_port/hd_textures.ts";
-import { checksum as qbChecksum } from "../level_port/qb.ts";
-import * as thug2Col from "../level_port/thug2_col.ts";
-import { zfightGates } from "../level_port/zfight_gate.ts";
-import type { Image as hdImage } from "../lib/frame_diff.ts";
+import type { SourceColObject } from "thug2-level-converter-core/level_port/geometry.ts";
+import * as hdTextures from "thug2-level-converter-core/level_port/hd_textures.ts";
+import { checksum as qbChecksum } from "thug2-level-converter-core/level_port/qb.ts";
+import * as thug2Col from "thug2-level-converter-core/level_port/thug2_col.ts";
+import { zfightGates } from "thug2-level-converter-core/level_port/zfight_gate.ts";
+import type { Image as hdImage } from "thug2-level-converter-core/lib/frame_diff.ts";
 import { Pkr, readPkrDirectory, writePkr } from "./pkr.ts";
 import * as thps2 from "./thps2.ts";
 import * as conv from "./thps2_levels.ts";
@@ -825,7 +825,7 @@ test("trisToStrip: the joins draw nothing - every triangle but the given ones ha
     assert.deepEqual(drawn, tris);
 });
 
-// --- --hd-textures (the AI upscaling pass, tools/pipeline/level_port/hd_textures.ts) -----------------------------------------
+// --- --hd-textures (the AI upscaling pass, thug2-level-converter-core/level_port/hd_textures.ts) -----------------------------------------
 
 // A stand-in for the model: nearest-neighbour x4 of each image; `seen` keeps what it was given.
 function fakeModel(seen: Map<string, hdImage>): hdTextures.Upscaler {
@@ -949,7 +949,7 @@ test("parseCommandLine: --hd-textures is optional-valued and off by default", ()
     assert.equal(conv.parseCommandLine([...base, "--hd-cache-clear"]).hdCacheClear, true);
 });
 
-// z-fighting gates (tools/pipeline/level_port/zfight_gate.ts): each level as the converter wrote and resolved it, at most
+// z-fighting gates (thug2-level-converter-core/level_port/zfight_gate.ts): each level as the converter wrote and resolved it, at most
 // what it was when the gate was set (2026-10-25, C:\Games\THUG2-4) - skipped
 // where there is no such conversion (THUG2_ZFIGHT_GAME: the game folder, default the main install).
 zfightGates("thps2", {
