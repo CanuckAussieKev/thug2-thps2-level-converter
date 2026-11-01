@@ -24,6 +24,7 @@
 //   - nodes: restarts (the level's start first, as Player1; 2P / horse ones for those modes) and rails.
 
 import * as fs from "node:fs";
+import * as path from "node:path";
 import * as common from "thug2-level-converter-core/level_port/common.ts";
 import * as geometry from "thug2-level-converter-core/level_port/geometry.ts";
 import * as hdTextures from "thug2-level-converter-core/level_port/hd_textures.ts";
@@ -41,7 +42,7 @@ import { trisToStrip } from "thug2-level-converter-core/level_port/tri_strip.ts"
 import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
 import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
 import { requireNs } from "thug2-level-converter-core/lib/neverscript.ts";
-import { isMain, print, pyExit, pyJoin, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { isMain, print, pyExit, runMain } from "thug2-level-converter-core/lib/py.ts";
 import * as gapTable from "./gap_table.ts";
 import { Pkr } from "./pkr.ts";
 import * as thps2 from "./thps2.ts";
@@ -1749,8 +1750,8 @@ export function findLevel(name: string): LevelInfo | undefined {
 }
 
 export function cmdConvert(args: Args): number {
-    const pkr = new Pkr(pyJoin(resolveInstall(args.thps2, "thps2"), "ALL.PKR"));
-    const out = args.out || pyJoin(args.thug2, STAGING);
+    const pkr = new Pkr(path.join(resolveInstall(args.thps2, "thps2"), "ALL.PKR"));
+    const out = args.out || path.join(args.thug2, STAGING);
     args.ns = requireNs(args.ns); // (--ns, NEVERSCRIPT, ... or `npx thug2-neverscript fetch` - lib/neverscript.ts)
     const wanted: LevelInfo[] = [];
     for (const name of args.levels.length ? args.levels : LEVELS.map((l) => l.base)) {
@@ -1847,12 +1848,12 @@ export function cmdConvert(args: Args): number {
                 () => `${start}    LoadSound "Shared\\\\Hits\\\\HitGlassPane2x" vol=100 dropoff=0 \n`,
             );
         }
-        common.nsCompile(args.ns, nodeText, pyJoin(levelDir, `${name}.qb`));
+        common.nsCompile(args.ns, nodeText, path.join(levelDir, `${name}.qb`));
         // (z-fighting: the scene's coplanar overlaps resolved, once its qb says what is drawn - zfight_resolve.ts)
         common.resolveZFight(levelDir, name, report);
         // (the NeverScript text too, to read: <out>\source - not installed, make_menu_level copies levels\ only)
-        fs.mkdirSync(pyJoin(out, "source"), { recursive: true });
-        fs.writeFileSync(pyJoin(out, "source", `${name}.ns`), nodeText);
+        fs.mkdirSync(path.join(out, "source"), { recursive: true });
+        fs.writeFileSync(path.join(out, "source", `${name}.ns`), nodeText);
         report.push(
             `  nodes: ${nodeArray.restarts} restarts, ${nodeArray.rails} rail points, ${nodeArray.triggers} triggers ` +
                 `(${nodeArray.gaps} gaps - ${nodeArray.gapsNamed} named by THPS2's table, ${nodeArray.kills} kill ` +
@@ -1893,7 +1894,7 @@ export function cmdConvert(args: Args): number {
             );
             if (sky) {
                 skyName = `${name}_sky`;
-                common.writeLevel(pyJoin(out, "levels", skyName), skyName, sky.scene, sky.textures, null);
+                common.writeLevel(path.join(out, "levels", skyName), skyName, sky.scene, sky.textures, null);
                 report.push(
                     `  sky: ${skyName} from ${backgrounds.length} background models (${sky.counts.faces} faces, ` +
                         `${sky.textures.textures.length} textures)`,
@@ -1916,7 +1917,7 @@ export function cmdConvert(args: Args): number {
         });
     }
     pkr.close();
-    portedLevels.writeManifest(pyJoin(out, portedLevels.MANIFEST), manifest);
+    portedLevels.writeManifest(path.join(out, portedLevels.MANIFEST), manifest);
     if (hd) report.push(...hdTextures.report(hd.stats, hd.options));
     print(report.join("\n"));
     print(`wrote ${out} (${manifest.levels.length} levels)`);
@@ -1928,7 +1929,7 @@ export function cmdConvert(args: Args): number {
 export function gapExeFiles(args: Args): string[] {
     if (args.thps2Exe) return [args.thps2Exe];
     const dir = resolveInstall(args.thps2, "thps2");
-    return [pyJoin(dir, "THawk2.exe"), pyJoin(dir, "THPS2.exe")];
+    return [path.join(dir, "THawk2.exe"), path.join(dir, "THPS2.exe")];
 }
 
 // THPS2's gap table for the gap numbers of `levels`' .trg files.
@@ -1943,7 +1944,7 @@ export function levelGapTable(args: Args, pkr: Pkr, levels: readonly LevelInfo[]
 
 // What the executables are and the gaps each level gets: their numbers and names (or the stand-ins).
 export function cmdGaps(args: Args): number {
-    const pkr = new Pkr(pyJoin(resolveInstall(args.thps2, "thps2"), "ALL.PKR"));
+    const pkr = new Pkr(path.join(resolveInstall(args.thps2, "thps2"), "ALL.PKR"));
     const levels = args.levels.length ? args.levels.map((n) => findLevel(n)).filter((l) => l !== undefined) : LEVELS;
     const source = levelGapTable(args, pkr, levels);
     print(source.report.join("\n"));
@@ -1968,13 +1969,13 @@ function titleCase(text: string): string {
 // Parses every level file of the ten levels (worlds, libraries, low-detail and object files, nodes, newtex BMPs) and
 // THUG2's own LA / TestLevel scene / collision / textures round trip (common.thug2RoundTrips).
 export function cmdSelfcheck(args: Args): number {
-    let [checked, failures] = common.thug2RoundTrips(pyJoin(args.thug2, "Data", "pre"), [
+    let [checked, failures] = common.thug2RoundTrips(path.join(args.thug2, "Data", "pre"), [
         "LAscn.prx",
         "LAcol.prx",
         "TestLevelscn.prx",
         "TestLevelcol.prx",
     ]);
-    const pkr = new Pkr(pyJoin(resolveInstall(args.thps2, "thps2"), "ALL.PKR"));
+    const pkr = new Pkr(path.join(resolveInstall(args.thps2, "thps2"), "ALL.PKR"));
     for (const info of LEVELS) {
         const files = pkr.list("data/").filter((e) => e.name.toLowerCase().startsWith(info.base));
         for (const e of files) {
@@ -2026,7 +2027,7 @@ export function cmdSelfcheck(args: Args): number {
 }
 
 function cmdList(args: Args): number {
-    const pkr = new Pkr(pyJoin(resolveInstall(args.thps2, "thps2"), "ALL.PKR"));
+    const pkr = new Pkr(path.join(resolveInstall(args.thps2, "thps2"), "ALL.PKR"));
     for (const info of LEVELS) {
         const have = ["", "_l", "_o", "_2"].map((s) => `data/${info.base}${s}.psx`).filter((f) => pkr.has(f));
         print(
