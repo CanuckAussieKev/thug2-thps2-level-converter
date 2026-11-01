@@ -32,6 +32,7 @@ import * as nodes from "thug2-level-converter-core/level_port/nodes.ts";
 import * as portedLevels from "thug2-level-converter-core/level_port/ported_levels.ts";
 import * as qb from "thug2-level-converter-core/level_port/qb.ts";
 import * as rampCollisionFix from "thug2-level-converter-core/level_port/ramp_collision.ts";
+import * as staging from "thug2-level-converter-core/level_port/staging.ts";
 import type * as tex from "thug2-level-converter-core/level_port/tex.ts";
 import * as thug2Col from "thug2-level-converter-core/level_port/thug2_col.ts";
 import { type Blend, makeMaterial, THUG2_TERRAIN_TYPES } from "thug2-level-converter-core/level_port/thug2_material.ts";
@@ -39,6 +40,7 @@ import * as thug2Scene from "thug2-level-converter-core/level_port/thug2_scene.t
 import { trisToStrip } from "thug2-level-converter-core/level_port/tri_strip.ts";
 import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
 import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
+import { requireNs } from "thug2-level-converter-core/lib/neverscript.ts";
 import { isMain, print, pyExit, pyJoin, runMain } from "thug2-level-converter-core/lib/py.ts";
 import * as gapTable from "./gap_table.ts";
 import { Pkr } from "./pkr.ts";
@@ -1749,14 +1751,14 @@ export function findLevel(name: string): LevelInfo | undefined {
 export function cmdConvert(args: Args): number {
     const pkr = new Pkr(pyJoin(resolveInstall(args.thps2, "thps2"), "ALL.PKR"));
     const out = args.out || pyJoin(args.thug2, STAGING);
-    if (!fs.existsSync(args.ns)) pyExit(common.nsMissing(args.ns));
+    args.ns = requireNs(args.ns); // (--ns, NEVERSCRIPT, ... or `npx thug2-neverscript fetch` - lib/neverscript.ts)
     const wanted: LevelInfo[] = [];
     for (const name of args.levels.length ? args.levels : LEVELS.map((l) => l.base)) {
         const info = findLevel(name);
         if (info === undefined) pyExit(`${name}: not a THPS2 level (${LEVELS.map((l) => l.name).join(", ")})`);
         wanted.push(info);
     }
-    if (fs.existsSync(out)) fs.rmSync(out, { recursive: true, force: true });
+    staging.prepareStaging(out, !args.levels.length);
     fs.mkdirSync(out, { recursive: true });
     const manifest: { levels: Record<string, unknown>[] } = { levels: [] };
     const report: string[] = [];
@@ -1808,7 +1810,7 @@ export function cmdConvert(args: Args): number {
             world.objects.length,
             hd,
         );
-        const levelDir = pyJoin(out, "levels", name);
+        const levelDir = staging.freshLevelFolder(out, name);
         // (THPS2 draws its layers - painted lines, decals, shadows on the floors - in the PlayStation's order with no
         // depth buffer: coplanar with the surface under them they'd fight over THUG2's depth buffer as stripes. Each
         // face lying on another has a z bias above it: faceLayers - per face; phase 2's per-material overlay_bias
@@ -1917,9 +1919,8 @@ export function cmdConvert(args: Args): number {
     portedLevels.writeManifest(pyJoin(out, portedLevels.MANIFEST), manifest);
     if (hd) report.push(...hdTextures.report(hd.stats, hd.options));
     print(report.join("\n"));
-    print(
-        `wrote ${out} (${manifest.levels.length} levels); install with tools\\pipeline\\menu_level\\make_menu_level.ts`,
-    );
+    print(`wrote ${out} (${manifest.levels.length} levels)`);
+    print(staging.installHint(out));
     return 0;
 }
 
@@ -2050,7 +2051,7 @@ const USAGE = `usage: thps2_levels.ts {convert,selfcheck,list,gaps} [levels ...]
   --thug2     THUG2's folder (default C:\\Games\\THUG2) - the install root or its Game folder
   --thps2     THPS2's folder (default C:\\Games\\THPS2) - where ALL.PKR is
   --out       where convert writes (default <thug2>\\${STAGING})
-  --ns        NeverScript's compiler (default out\\neverscript\\ns.exe)
+  --ns        NeverScript's ns (default: found - npx thug2-neverscript where / fetch)
   --no-mips   no mip levels (faster)
   --hd-textures [{2,4}]
               convert: the textures AI-upscaled (default x4; thug2-content-pipeline/hd_textures/README.md - optional, off by
@@ -2101,7 +2102,7 @@ export function parseCommandLine(argv: readonly string[]): Args {
         thug2: values.thug2 ?? "C:\\Games\\THUG2",
         thps2: values.thps2 ?? "C:\\Games\\THPS2",
         out: values.out ?? null,
-        ns: values.ns ?? common.NS,
+        ns: values.ns ?? "",
         noMips: values["no-mips"] ?? false,
         thps2Exe: values["thps2-exe"] ?? null,
         hd: hdTextures.optionsFromCli(
